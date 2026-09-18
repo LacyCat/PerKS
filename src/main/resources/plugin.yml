@@ -1,0 +1,10 @@
+name: PerKS
+version: '${version}'
+
+main: cat.lacycat.perKS.PerKS
+api-version: '26.3'
+load: POSTWORLD
+commands:
+  pick:
+    description: "Perk 선택 창을 엽니다."
+    usage: "/<command> [플레이어/선택자]"
