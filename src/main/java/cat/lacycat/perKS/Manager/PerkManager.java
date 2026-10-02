@@ -6,7 +6,6 @@ import cat.lacycat.perKS.Ability.PlaceHolder;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
-import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Material;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
@@ -67,7 +66,7 @@ public class PerkManager implements Listener {
                 if (bs == slot) { isBookSlot = true; break; }
             }
             if (isBookSlot) {
-                IAbility ability = _get(p, selectedAbilities.get(bookIndex).getAbilityName());
+                IAbility ability = _get(p, selectedAbilities.get(bookIndex).getID());
 
                 p.getInventory().setItem(
                         slot,
@@ -93,9 +92,11 @@ public class PerkManager implements Listener {
                     continue;
                 }
 
-                // 임시로 인스턴스를 하나 만들어서 능력치 이름(getAbilityName)을 알아내 저장합니다.
+                // 임시로 인스턴스를 하나 만들어서 고유 ID(getID)를 알아내 저장합니다.
                 IAbility tempInstance = clazz.getDeclaredConstructor().newInstance();
-                registeredAbilities.put(tempInstance.getAbilityName(), clazz);
+                if (registeredAbilities.putIfAbsent(tempInstance.getID(), clazz) != null) {
+                    getLogger().warning("중복 능력 ID: " + tempInstance.getID());
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -126,33 +127,35 @@ public class PerkManager implements Listener {
         Player player = event.getPlayer();
         Item item = event.getItemDrop();
 
-        if (!choosing.contains(player.getUniqueId()) || item.getItemStack().getType() != Material.WRITTEN_BOOK) {
+        if (!choosing.contains(player.getUniqueId())) {
             return;
         }
         if (item.getItemStack().getType() == Material.BARRIER) {
             event.setCancelled(true);
             return;
         }
-        ItemMeta meta = item.getItemStack().getItemMeta();
-        // [수정] customName()이 null인 경우(이름 없는 책) NPE 방지
-        if (meta == null || meta.customName() == null) {
+        if (item.getItemStack().getType() != Material.WRITTEN_BOOK) {
             return;
         }
+        ItemMeta meta = item.getItemStack().getItemMeta();
+        if (meta == null) return;
 
-        String s = meta.getPersistentDataContainer().get(Util.ab_key, PersistentDataType.STRING);
+        // 능력 책의 고유 ID는 PDC에 저장되어 있다 (표시 이름과 무관)
+        String id = meta.getPersistentDataContainer().get(Util.ab_key, PersistentDataType.STRING);
+        if (id == null) return; // 능력 책이 아님
 
         // [수정] perk.get()이 null일 수 있으므로 computeIfAbsent로 항상 빈 리스트를 보장
         List<IAbility> ownedAbilities = perk.computeIfAbsent(player.getUniqueId(), k -> new ArrayList<>());
 
-        if (_existing(player, s)) {
-            IAbility ability = _get(player, s);
+        if (_existing(player, id)) {
+            IAbility ability = _get(player, id);
             // [수정] 만렙 체크 없이 레벨업 되던 부분 방어
             if (ability != null && ability.getLevel() < ability.getMaxLevel()) {
                 ability.setLevel(ability.getLevel() + 1);
                 ability.onUpdated();
             }
         } else {
-            Class<? extends IAbility> abilityClass = registeredAbilities.get(s);
+            Class<? extends IAbility> abilityClass = registeredAbilities.get(id);
             if (abilityClass != null) {
                 try {
                     IAbility newAbility = abilityClass.getDeclaredConstructor().newInstance();
@@ -160,7 +163,7 @@ public class PerkManager implements Listener {
                     newAbility.onActivated(player);
 
                     ownedAbilities.add(newAbility);
-                    player.sendMessage(Component.text("[" + s + "] 능력을 획득하셨습니다"));
+                    player.sendMessage(Component.text("[" + newAbility.getAbilityName() + "] 능력을 획득하셨습니다"));
 
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -210,7 +213,7 @@ public class PerkManager implements Listener {
         List<IAbility> owned = perk.get(p.getUniqueId());
         if (owned == null) return false;
         for (IAbility a : owned) {
-            if (a.getAbilityName().equals(s)) return true;
+            if (a.getID().equals(s)) return true;
         }
         return false;
     }
@@ -219,7 +222,7 @@ public class PerkManager implements Listener {
         List<IAbility> owned = perk.get(p.getUniqueId());
         if (owned == null) return null;
         for (IAbility a : owned) {
-            if (a.getAbilityName().equals(s)) return a;
+            if (a.getID().equals(s)) return a;
         }
         return null;
     }
@@ -231,7 +234,7 @@ public class PerkManager implements Listener {
      */
     private List<IAbility> pickThreeRandomAbilities(List<IAbility> playerAbilities) {
         List<IAbility> chosen = new ArrayList<>();
-        List<String> chosenNames = new ArrayList<>(); // 중복 방지용 이름 체크
+        List<String> chosenNames = new ArrayList<>(); // 중복 방지용 ID 체크
 
         // 안전장치: 등록된 총 능력치가 3개 미만이면 예외 방지를 위해 기본 반환 처리
         if (registeredAbilities.size() <= 3) {
@@ -256,10 +259,10 @@ public class PerkManager implements Listener {
             Class<? extends IAbility> finalChoice = tierPool.get(ThreadLocalRandom.current().nextInt(tierPool.size()));
             try {
                 IAbility abilityInstance = finalChoice.getDeclaredConstructor().newInstance();
-                String currentName = abilityInstance.getAbilityName();
+                String currentName = abilityInstance.getID();
 
                 for (IAbility existing : playerAbilities) {
-                    if (existing.getAbilityName().equals(currentName)) {
+                    if (existing.getID().equals(currentName)) {
                         abilityInstance = existing;
                         break;
                     }
@@ -269,7 +272,7 @@ public class PerkManager implements Listener {
 
                 boolean isMaxLevel = false;
                 for (IAbility existing : playerAbilities) {
-                    if (existing.getAbilityName().equals(currentName)) {
+                    if (existing.getID().equals(currentName)) {
                         if (existing.getLevel() >= existing.getMaxLevel()) {
                             isMaxLevel = true;
                         }

@@ -15,6 +15,11 @@ public class PlaceHolder implements IAbility{
     }
 
     @Override
+    public String getID() {
+        return "placeholder";
+    }
+
+    @Override
     public ItemStack getBook() {
         ItemStack book = new ItemStack(Material.WRITTEN_BOOK);
         BookMeta bookMeta = (BookMeta) book.getItemMeta();
