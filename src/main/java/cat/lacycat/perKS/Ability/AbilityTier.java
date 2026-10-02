@@ -1,7 +1,8 @@
 package cat.lacycat.perKS.Ability;
 
 public enum AbilityTier {
-    uncommon,
+    dummy,
+    common,
     rare,
     epic,
     legendary,

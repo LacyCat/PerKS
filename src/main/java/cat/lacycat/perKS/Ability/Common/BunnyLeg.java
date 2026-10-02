@@ -1,5 +1,8 @@
-package cat.lacycat.perKS.Ability;
+package cat.lacycat.perKS.Ability.Common;
 
+import cat.lacycat.perKS.Ability.AbilityTier;
+import cat.lacycat.perKS.Ability.IAbility;
+import cat.lacycat.perKS.Manager.Util;
 import cat.lacycat.perKS.PerKS;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
@@ -13,44 +16,59 @@ import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
+import org.bukkit.inventory.meta.FireworkMeta;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
 
 import java.util.Arrays;
 
 public class BunnyLeg implements IAbility {
     private final static NamespacedKey jumpModifierKey = new NamespacedKey(PerKS.getInstance(), "bunneyleg");
 
-    public static final double[] modi = {0.08, 0.09, 0.11};
+    public static final double[] modi = {0.08, 0.1772, 0.306692};
     private Player p;
     private int level = 0;
 
     @Override
     public String getAbilityName() { return "토끼발"; }
     @Override
+    public String getID() { return "bunnyleg"; }
+    @Override
     public ItemStack getBook() {
         ItemStack book = new ItemStack(Material.WRITTEN_BOOK);
         BookMeta bookMeta = (BookMeta) book.getItemMeta();
         if (bookMeta != null) {
-            bookMeta.customName(Component.text("토끼발").decorate(TextDecoration.BOLD));
-            bookMeta.setTitle("토끼발");
+            bookMeta.customName(Component.text("토끼발").decorate(TextDecoration.BOLD).decoration(TextDecoration.ITALIC, false));
+            bookMeta.setTitle("토끼발" + " " + Util.intToRoman(level));
             bookMeta.setAuthor("일반");
             TextComponent page1 = Component.text("토끼발").color(TextColor.color(128,128,128)).decorate(TextDecoration.BOLD)
-                    .appendNewline().append(Component.text("점프력을 총 " + modi[level] * 100 + "% 만큼 늘립니다").color(TextColor.color(0,0,0)));
+                    .appendNewline().append(Component.text("점프력을 총 " + ((modi[level] + 1) * 100) + "% 늘립니다").color(TextColor.color(0,0,0)));
             TextComponent page2 = Component.text("증가율 (n/100)").appendNewline().append(Component.text(Arrays.toString(modi)));
             bookMeta.addPages(page1, page2);
+            bookMeta.getPersistentDataContainer().set(Util.ab_key, PersistentDataType.STRING, getID());
         }
         book.setItemMeta(bookMeta);
         return book;
     }
 
     @Override
+    public ItemStack getShow() {
+        ItemStack rabbitleg = new ItemStack(Material.RABBIT_FOOT);
+        ItemMeta meta = rabbitleg.getItemMeta();
+        meta.customName(Component.text("토끼발").decoration(TextDecoration.ITALIC,false));
+        return rabbitleg;
+    }
+
+    @Override
     public AbilityTier getTier() {
-        return AbilityTier.uncommon;
+        return AbilityTier.common;
     }
 
     @Override
     public void onActivated(Player p) {
         level = 1;
         this.p = p;
+        onUpdated();
     }
 
     @Override
@@ -74,7 +92,7 @@ public class BunnyLeg implements IAbility {
 
         AttributeModifier modifier = new AttributeModifier(
                 jumpModifierKey, // 고유 키
-                modi[level - 1],             // 더할 수치 (기본 0.42 + 0.4 = 0.82)
+                modi[level - 1],
                 AttributeModifier.Operation.MULTIPLY_SCALAR_1 // 연산 방식
         );
         jump.addModifier(modifier);

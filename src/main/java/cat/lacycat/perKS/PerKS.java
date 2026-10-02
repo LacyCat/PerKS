@@ -5,6 +5,9 @@ import cat.lacycat.perKS.Manager.InventoryBackupManager;
 import cat.lacycat.perKS.Manager.PerkManager;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.reflections.Reflections;
+import org.reflections.scanners.Scanners;
+import org.reflections.util.ConfigurationBuilder;
 
 public class PerKS extends JavaPlugin {
 

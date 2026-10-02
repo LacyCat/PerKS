@@ -1,8 +1,8 @@
 package cat.lacycat.perKS.Manager;
 
 import cat.lacycat.perKS.Ability.AbilityTier;
-import cat.lacycat.perKS.Ability.BunnyLeg;
 import cat.lacycat.perKS.Ability.IAbility;
+import cat.lacycat.perKS.Ability.PlaceHolder;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -18,17 +18,18 @@ import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.reflections.Reflections;
 
-import java.lang.reflect.*;
-
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
+import static org.bukkit.Bukkit.getLogger;
+
 public class PerkManager implements Listener {
-    private static final int[] percents = {45, 30, 22, 3, 1};
+    private static final int[] percents = {0, 45, 30, 22, 3, 1};
 
     private final Map<String, Class<? extends IAbility>> registeredAbilities = new HashMap<>();
     // [수정] 매번 리플렉션으로 인스턴스화해서 티어를 확인하지 않도록, 시작 시점에 티어별로 미리 그룹핑해둔다.
@@ -40,6 +41,7 @@ public class PerkManager implements Listener {
         this.ibm = ibm;
         scanAndRegisterAbilities();
         buildTierIndex();
+        getLogger().info("abilities=" + registeredAbilities.size());
     }
 
     private Map<UUID, List<IAbility>> perk = new HashMap<>();
@@ -48,7 +50,7 @@ public class PerkManager implements Listener {
     public void showPick(Player p) {
         if (choosing.contains(p.getUniqueId())) return;
         ibm.backupInventory(p);
-        p.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, Integer.MAX_VALUE, 1, true));
+        p.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, Integer.MAX_VALUE, 1, false));
         p.sendActionBar(Component.text("현명하게 선택하세요...").color(TextColor.color(128, 128, 128)).decorate(TextDecoration.BOLD));
         choosing.add(p.getUniqueId());
 
@@ -65,7 +67,12 @@ public class PerkManager implements Listener {
                 if (bs == slot) { isBookSlot = true; break; }
             }
             if (isBookSlot) {
-                p.getInventory().setItem(slot, selectedAbilities.get(bookIndex).getBook());
+                IAbility ability = _get(p, selectedAbilities.get(bookIndex).getAbilityName());
+
+                p.getInventory().setItem(
+                        slot,
+                        (ability != null ? ability : selectedAbilities.get(bookIndex)).getBook()
+                );
                 bookIndex++;
             } else {
                 p.getInventory().setItem(slot, createBarrierItem());
@@ -122,14 +129,17 @@ public class PerkManager implements Listener {
         if (!choosing.contains(player.getUniqueId()) || item.getItemStack().getType() != Material.WRITTEN_BOOK) {
             return;
         }
-
+        if (item.getItemStack().getType() == Material.BARRIER) {
+            event.setCancelled(true);
+            return;
+        }
         ItemMeta meta = item.getItemStack().getItemMeta();
         // [수정] customName()이 null인 경우(이름 없는 책) NPE 방지
         if (meta == null || meta.customName() == null) {
             return;
         }
 
-        String s = PlainTextComponentSerializer.plainText().serialize(meta.customName());
+        String s = meta.getPersistentDataContainer().get(Util.ab_key, PersistentDataType.STRING);
 
         // [수정] perk.get()이 null일 수 있으므로 computeIfAbsent로 항상 빈 리스트를 보장
         List<IAbility> ownedAbilities = perk.computeIfAbsent(player.getUniqueId(), k -> new ArrayList<>());
@@ -228,7 +238,7 @@ public class PerkManager implements Listener {
             for (Class<? extends IAbility> clazz : registeredAbilities.values()) {
                 try { chosen.add(clazz.getDeclaredConstructor().newInstance()); } catch (Exception ignored) {}
             }
-            while (chosen.size() < 3) { chosen.add(new BunnyLeg()); }
+            while (chosen.size() < 3) { chosen.add(new PlaceHolder()); }
             return chosen;
         }
 
@@ -247,6 +257,13 @@ public class PerkManager implements Listener {
             try {
                 IAbility abilityInstance = finalChoice.getDeclaredConstructor().newInstance();
                 String currentName = abilityInstance.getAbilityName();
+
+                for (IAbility existing : playerAbilities) {
+                    if (existing.getAbilityName().equals(currentName)) {
+                        abilityInstance = existing;
+                        break;
+                    }
+                }
 
                 if (chosenNames.contains(currentName)) continue;
 
@@ -270,15 +287,8 @@ public class PerkManager implements Listener {
 
         // 만레벨 제외 조건 때문에 3개를 채우지 못했다면, 예외 방지를 위해 만레벨 검사를 풀고 빈자리 채우기
         if (chosen.size() < 3) {
-            for (Class<? extends IAbility> clazz : registeredAbilities.values()) {
-                if (chosen.size() >= 3) break;
-                try {
-                    IAbility temp = clazz.getDeclaredConstructor().newInstance();
-                    if (!chosenNames.contains(temp.getAbilityName())) {
-                        chosen.add(temp);
-                        chosenNames.add(temp.getAbilityName());
-                    }
-                } catch (Exception ignored) {}
+            while (chosen.size() < 3) {
+                chosen.add(new PlaceHolder());
             }
         }
 
@@ -296,7 +306,7 @@ public class PerkManager implements Listener {
                 return tiers[i];
             }
         }
-        return AbilityTier.uncommon; // 예외 예방 기본값
+        return AbilityTier.dummy; // 예외 예방 기본값
     }
 
     /**
