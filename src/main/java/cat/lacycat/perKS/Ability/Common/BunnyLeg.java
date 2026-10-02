@@ -40,9 +40,12 @@ public class BunnyLeg implements IAbility {
         return Util.buildBook(this, Util.tiertoname(getTier()),
                 List.of(Component.text(getAbilityName(), Util.tiertocolor(getTier()), TextDecoration.BOLD),
                         Component.text("\"높게, 더 높게!\"").color(NamedTextColor.DARK_GRAY).decorate(TextDecoration.ITALIC, TextDecoration.BOLD),
-                        Component.empty()),
+                        Component.empty()
+                ),
                 List.of(new Util.AbilityBufInfo(Util.AbilityBufType.Attribute, true,
-                        Component.text("점프력 +" + (int) (modi[Math.min(level, modi.length - 1)] * 100) + "% (대략)"))));
+                        Component.text("점프력 +" + (int) (modi[Math.min(level, modi.length - 1)] * 100) + "% (대략)"))
+                )
+        );
 
 
     }
@@ -51,7 +54,7 @@ public class BunnyLeg implements IAbility {
     public ItemStack getShow() {
         ItemStack rabbitleg = new ItemStack(Material.RABBIT_FOOT);
         ItemMeta meta = rabbitleg.getItemMeta();
-        meta.customName(Component.text("토끼발").decoration(TextDecoration.ITALIC,false));
+        meta.customName(Component.text("토끼발").decoration(TextDecoration.ITALIC,false).color(Util.tiertocolor(getTier())));
         return rabbitleg;
     }
 
@@ -62,7 +65,6 @@ public class BunnyLeg implements IAbility {
 
     @Override
     public void onActivated(Player p) {
-        level = 1;
         this.p = p;
         onUpdated();
     }

@@ -15,6 +15,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import java.util.List;
 
 public class PlaceHolder implements IAbility {
+    private int l = 0;
     @Override
     public String getAbilityName() {
         return "null";
@@ -40,7 +41,7 @@ public class PlaceHolder implements IAbility {
     public ItemStack getShow() {
         ItemStack nullpaper = new ItemStack(Material.PAPER);
         ItemMeta meta = nullpaper.getItemMeta();
-        meta.customName(Component.text("여백의 미").decoration(TextDecoration.ITALIC,false));
+        meta.customName(Component.text("여백의 미").decoration(TextDecoration.ITALIC,false).color(Util.tiertocolor(getTier())));
         nullpaper.setItemMeta(meta);
         return nullpaper;
     }
@@ -67,11 +68,11 @@ public class PlaceHolder implements IAbility {
 
     @Override
     public void setLevel(int level) {
-
+        l = level;
     }
 
     @Override
     public int getLevel() {
-        return 0;
+        return l;
     }
 }

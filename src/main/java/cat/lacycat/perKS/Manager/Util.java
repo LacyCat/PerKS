@@ -57,7 +57,7 @@ public class Util {
             for (int i = 0; i < about.length; i++) {
                 Component prefix = (i == 0)
                         ? Component.text(pos ? "+ " : "- ", pos ? NamedTextColor.GREEN : NamedTextColor.RED)
-                        : Component.text("└- ", NamedTextColor.GRAY);
+                        : Component.text("└- ", pos ? NamedTextColor.GREEN : NamedTextColor.RED);
                 // 부모 스타일이 없는 textOfChildren이라 접두 색이 내용으로 번지지 않는다
                 out.add(Component.textOfChildren(prefix, about[i]));
             }
@@ -110,10 +110,10 @@ public class Util {
         // 3) 책 생성
         ItemStack book = new ItemStack(Material.WRITTEN_BOOK);
         BookMeta meta = (BookMeta) book.getItemMeta();
-        meta.customName(Component.text(ability.getAbilityName())
+        meta.customName(Component.text(ability.getAbilityName() + " " + intToRoman(ability.getLevel() + 1))
                 .decorate(TextDecoration.BOLD)
                 .decoration(TextDecoration.ITALIC, false));
-        meta.setTitle(ability.getAbilityName() + " " + intToRoman(ability.getLevel()));
+        meta.setTitle(ability.getAbilityName() + " " + intToRoman(ability.getLevel() + 1));
         meta.setAuthor(author);
         meta.addPages(pages.toArray(new Component[0]));
         meta.getPersistentDataContainer().set(ab_key, PersistentDataType.STRING, ability.getID());

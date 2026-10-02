@@ -163,7 +163,7 @@ public class PerkManager implements Listener {
             if (abilityClass != null) {
                 try {
                     IAbility newAbility = abilityClass.getDeclaredConstructor().newInstance();
-
+                    newAbility.setLevel(1);
                     newAbility.onActivated(player);
                     player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.5f, 1.0f);
                     ownedAbilities.add(newAbility);
@@ -245,7 +245,17 @@ public class PerkManager implements Listener {
         // 안전장치: 등록된 총 능력치가 3개 미만이면 예외 방지를 위해 기본 반환 처리
         if (registeredAbilities.size() <= 3) {
             for (Class<? extends IAbility> clazz : registeredAbilities.values()) {
-                try { chosen.add(clazz.getDeclaredConstructor().newInstance()); } catch (Exception ignored) {}
+                try {
+                    IAbility inst = clazz.getDeclaredConstructor().newInstance();
+                    boolean maxed = false;
+                    for (IAbility owned : playerAbilities) {
+                        if (owned.getID().equals(inst.getID())) {
+                            maxed = owned.getLevel() >= owned.getMaxLevel();
+                            break;
+                        }
+                    }
+                    if (!maxed) chosen.add(inst);
+                } catch (Exception ignored) {}
             }
             while (chosen.size() < 3) { chosen.add(new PlaceHolder()); }
             return chosen;
