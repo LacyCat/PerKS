@@ -6,6 +6,7 @@ import cat.lacycat.perKS.Manager.Util;
 import cat.lacycat.perKS.PerKS;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
+import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Material;
@@ -21,6 +22,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.util.Arrays;
+import java.util.List;
 
 public class BunnyLeg implements IAbility {
     private final static NamespacedKey jumpModifierKey = new NamespacedKey(PerKS.getInstance(), "bunneyleg");
@@ -35,20 +37,14 @@ public class BunnyLeg implements IAbility {
     public String getID() { return "bunnyleg"; }
     @Override
     public ItemStack getBook() {
-        ItemStack book = new ItemStack(Material.WRITTEN_BOOK);
-        BookMeta bookMeta = (BookMeta) book.getItemMeta();
-        if (bookMeta != null) {
-            bookMeta.customName(Component.text("토끼발").decorate(TextDecoration.BOLD).decoration(TextDecoration.ITALIC, false));
-            bookMeta.setTitle("토끼발" + " " + Util.intToRoman(level));
-            bookMeta.setAuthor("일반");
-            TextComponent page1 = Component.text("토끼발").color(TextColor.color(128,128,128)).decorate(TextDecoration.BOLD)
-                    .appendNewline().append(Component.text("점프력을 총 " + ((modi[level] + 1) * 100) + "% 늘립니다").color(TextColor.color(0,0,0)));
-            TextComponent page2 = Component.text("증가율 (n/100)").appendNewline().append(Component.text(Arrays.toString(modi)));
-            bookMeta.addPages(page1, page2);
-            bookMeta.getPersistentDataContainer().set(Util.ab_key, PersistentDataType.STRING, getID());
-        }
-        book.setItemMeta(bookMeta);
-        return book;
+        return Util.buildBook(this, Util.tiertoname(getTier()),
+                List.of(Component.text(getAbilityName(), Util.tiertocolor(getTier()), TextDecoration.BOLD),
+                        Component.text("\"높게, 더 높게!\"").color(NamedTextColor.DARK_GRAY).decorate(TextDecoration.ITALIC, TextDecoration.BOLD),
+                        Component.empty()),
+                List.of(new Util.AbilityBufInfo(Util.AbilityBufType.Attribute, true,
+                        Component.text("점프력 +" + (int) (modi[Math.min(level, modi.length - 1)] * 100) + "% (대략)"))));
+
+
     }
 
     @Override

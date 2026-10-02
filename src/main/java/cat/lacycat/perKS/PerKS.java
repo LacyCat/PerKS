@@ -1,6 +1,7 @@
 package cat.lacycat.perKS;
 
 import cat.lacycat.perKS.Manager.Command.PickCommand;
+import cat.lacycat.perKS.Manager.Command.PickMult;
 import cat.lacycat.perKS.Manager.InventoryBackupManager;
 import cat.lacycat.perKS.Manager.PerkManager;
 import org.bukkit.Bukkit;
@@ -31,6 +32,7 @@ public class PerKS extends JavaPlugin {
         // 각자 registerEvents(this, PerKSPlugin.getInstance())를 호출하므로
         // 여기서 따로 등록할 필요는 없음
         getCommand("pick").setExecutor(new PickCommand());
+        getCommand("pickmult").setExecutor(new PickMult());
     }
 
     @Override

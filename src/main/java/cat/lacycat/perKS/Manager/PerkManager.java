@@ -2,11 +2,12 @@ package cat.lacycat.perKS.Manager;
 
 import cat.lacycat.perKS.Ability.AbilityTier;
 import cat.lacycat.perKS.Ability.IAbility;
-import cat.lacycat.perKS.Ability.PlaceHolder;
+import cat.lacycat.perKS.Ability.Dummy.PlaceHolder;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -50,7 +51,9 @@ public class PerkManager implements Listener {
         if (choosing.contains(p.getUniqueId())) return;
         ibm.backupInventory(p);
         p.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, Integer.MAX_VALUE, 1, false));
+        p.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, Integer.MAX_VALUE, 255, false));
         p.sendActionBar(Component.text("현명하게 선택하세요...").color(TextColor.color(128, 128, 128)).decorate(TextDecoration.BOLD));
+        p.playSound(p.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_PLACE, 1.0f, 1.25f);
         choosing.add(p.getUniqueId());
 
         // [수정] perk.get()이 null일 수 있으므로 computeIfAbsent로 항상 빈 리스트를 보장한다.
@@ -153,6 +156,7 @@ public class PerkManager implements Listener {
             if (ability != null && ability.getLevel() < ability.getMaxLevel()) {
                 ability.setLevel(ability.getLevel() + 1);
                 ability.onUpdated();
+                player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.5f, 1.05f + (0.05f * ability.getLevel()));
             }
         } else {
             Class<? extends IAbility> abilityClass = registeredAbilities.get(id);
@@ -161,7 +165,7 @@ public class PerkManager implements Listener {
                     IAbility newAbility = abilityClass.getDeclaredConstructor().newInstance();
 
                     newAbility.onActivated(player);
-
+                    player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.5f, 1.0f);
                     ownedAbilities.add(newAbility);
                     player.sendMessage(Component.text("[" + newAbility.getAbilityName() + "] 능력을 획득하셨습니다"));
 
@@ -172,6 +176,7 @@ public class PerkManager implements Listener {
         }
         choosing.remove(player.getUniqueId());
         player.removePotionEffect(PotionEffectType.BLINDNESS);
+        player.removePotionEffect(PotionEffectType.SLOWNESS);
         ibm.restoreInventory(player);
         item.remove();
     }
@@ -199,6 +204,7 @@ public class PerkManager implements Listener {
         Player player = event.getPlayer();
         if (choosing.remove(player.getUniqueId())) {
             player.removePotionEffect(PotionEffectType.BLINDNESS);
+            player.removePotionEffect(PotionEffectType.SLOWNESS);
             ibm.restoreInventory(player);
         }
         List<IAbility> owned = perk.remove(player.getUniqueId());

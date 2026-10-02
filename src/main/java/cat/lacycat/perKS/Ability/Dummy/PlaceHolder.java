@@ -1,6 +1,10 @@
-package cat.lacycat.perKS.Ability;
+package cat.lacycat.perKS.Ability.Dummy;
 
+import cat.lacycat.perKS.Ability.AbilityTier;
+import cat.lacycat.perKS.Ability.IAbility;
+import cat.lacycat.perKS.Manager.Util;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -8,7 +12,9 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 
-public class PlaceHolder implements IAbility{
+import java.util.List;
+
+public class PlaceHolder implements IAbility {
     @Override
     public String getAbilityName() {
         return "null";
@@ -21,15 +27,13 @@ public class PlaceHolder implements IAbility{
 
     @Override
     public ItemStack getBook() {
-        ItemStack book = new ItemStack(Material.WRITTEN_BOOK);
-        BookMeta bookMeta = (BookMeta) book.getItemMeta();
-        if (bookMeta != null) {
-            bookMeta.customName(Component.text("NULL").decorate(TextDecoration.BOLD).decoration(TextDecoration.ITALIC, false));
-            bookMeta.setTitle("플레이스홀더");
-            bookMeta.setAuthor("없음");
-        }
-        book.setItemMeta(bookMeta);
-        return book;
+        return Util.buildBook(this, Util.tiertoname(getTier()),
+                List.of(Component.text(getAbilityName(), Util.tiertocolor(getTier()), TextDecoration.BOLD),
+                        Component.text("\"이 시스템의 한계를 뚫었다...\"").color(NamedTextColor.DARK_GRAY).decorate(TextDecoration.ITALIC, TextDecoration.BOLD),
+                        Component.empty()),
+                List.of(new Util.AbilityBufInfo(Util.AbilityBufType.Else, true, Component.text("아무 일도 일어나지 않습니다.")),
+                        new Util.AbilityBufInfo(Util.AbilityBufType.Else, false, Component.text("아무 일도 일어나지 않습니다.")))
+                );
     }
 
     @Override

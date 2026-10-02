@@ -8,3 +8,6 @@ commands:
   pick:
     description: "Perk 선택 창을 엽니다."
     usage: "/<command> [플레이어/선택자]"
+  pickmult:
+    description: "다중 Perk 선택 창을 엽니다."
+    usage: "/<command> [플레이어/선택자] [횟수]"
